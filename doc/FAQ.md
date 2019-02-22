@@ -14,6 +14,8 @@ User
 * **[Can I subscribe to a hashtag?](help/FAQ#hashtag)**
 * **[How to create a RSS feed of the stream?](help/FAQ#rss)**
 * **[Are there any clients for friendica I can use?](help/FAQ#clients)**
+* **[How can I share my color scheme with others?](help/FAQ#schemesharing)**
+* **[How can I apply a color scheme shared by others?](help/FAQ#schemesharingpaste)**
 * **[Where I can find help?](help/FAQ#help)**
 
 Admins
@@ -188,6 +190,20 @@ Here is a list of known working clients:
   * Hotot
 
 Depending on the features of the client you might encounter some glitches in usability, like being limited in the length of your postings to 140 characters and having no access to the [permission settings](help/Groups-and-Privacy).
+
+<a name="schemesharing"></a>
+
+### How can I share my color scheme with others?
+
+If you created a color scheme you want to share it with others, you can do this easily by sharing the schemestring.
+
+You can find this string within the `custom theme settings` of the [display settings](/settings/display) page. This input box is only available when custom color scheme is selected.
+
+
+<a name="schemesharingpaste"></a>
+
+### How can I apply a color scheme shared by others?
+People who want to apply a color scheme shared by others can paste the string in the schemestring box on `custom theme settings` of the [display settings](/settings/display) page and click `submit`. 
 
 <a name="help"></a>
 
