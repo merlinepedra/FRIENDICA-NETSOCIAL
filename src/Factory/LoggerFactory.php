@@ -8,6 +8,7 @@ use Friendica\Network\HTTPException\InternalServerErrorException;
 use Friendica\Util\Logger\FriendicaDevelopHandler;
 use Friendica\Util\Logger\Introspection;
 use Friendica\Util\Logger\SyslogLogger;
+use Friendica\Util\Logger\VoidLogger;
 use Friendica\Util\Profiler;
 use Monolog;
 use Psr\Log\LoggerInterface;
@@ -30,10 +31,14 @@ class LoggerFactory
 	 */
 	public static function create($channel, Configuration $config)
 	{
+		if(empty($config->get('system', 'debugging', false))) {
+			return new VoidLogger();
+		}
+
 		switch ($config->get('system', 'logger_adapter', 'monolog')) {
 			case 'syslog':
 				$intorspector = new Introspection(LOG_DEBUG, [Logger::class, SyslogLogger::class, Profiler::class]);
-				$level     = $config->get('system', 'loglevel');
+				$level = $config->get('system', 'loglevel');
 
 				$logger = new SyslogLogger($channel, $intorspector, $level);
 				break;
@@ -45,16 +50,11 @@ class LoggerFactory
 				$logger->pushProcessor(new Monolog\Processor\UidProcessor());
 				$logger->pushProcessor(new Introspection(LogLevel::DEBUG, [Logger::class, Profiler::class]));
 
-				$debugging = $config->get('system', 'debugging');
-				$stream    = $config->get('system', 'logfile');
-				$level     = $config->get('system', 'loglevel');
+				$stream = $config->get('system', 'logfile');
+				$level = $config->get('system', 'loglevel');
 
-				if ($debugging) {
-					$loglevel = self::mapLegacyConfigDebugLevel((string)$level);
-					static::addStreamHandler($logger, $stream, $loglevel);
-				} else {
-					static::addVoidHandler($logger);
-				}
+				$loglevel = self::mapLegacyConfigDebugLevel((string)$level);
+				static::addStreamHandler($logger, $stream, $loglevel);
 				break;
 		}
 
