@@ -6,8 +6,10 @@ use Friendica\Core\Config\Configuration;
 use Friendica\Core\Logger;
 use Friendica\Network\HTTPException\InternalServerErrorException;
 use Friendica\Util\Introspection;
+use Friendica\Util\Logger\AbstractFriendicaLogger;
 use Friendica\Util\Logger\Monolog\FriendicaDevelopHandler;
 use Friendica\Util\Logger\Monolog\FriendicaIntrospectionProcessor;
+use Friendica\Util\Logger\StreamLogger;
 use Friendica\Util\Logger\SyslogLogger;
 use Friendica\Util\Logger\VoidLogger;
 use Friendica\Util\Profiler;
@@ -22,6 +24,16 @@ use Psr\Log\LogLevel;
  */
 class LoggerFactory
 {
+	/**
+	 * A list of classes, which shouldn't get logged
+	 * @var array
+	 */
+	private static $ignoreClassList = [
+		Logger::class,
+		Profiler::class,
+		'Friendica\\Util\\Logger',
+	];
+
 	/**
 	 * Creates a new PSR-3 compliant logger instances
 	 *
@@ -41,14 +53,19 @@ class LoggerFactory
 			return $logger;
 		}
 
-		$introspection = new Introspection([Logger::class, Profiler::class]);
+		$introspection = new Introspection(self::$ignoreClassList);
+		$level = $config->get('system', 'loglevel');
 
 		switch ($config->get('system', 'logger_adapter', 'monolog')) {
-			case 'syslog':
-				$level = $config->get('system', 'loglevel');
 
+			case 'syslog':
 				$logger = new SyslogLogger($channel, $introspection, $profiler, $level);
 				break;
+
+			case 'stream':
+				$logger = new StreamLogger($channel, $introspection, $profiler, $level);
+				break;
+
 			case 'monolog':
 			default:
 				$logger = new Monolog\Logger($channel);
@@ -58,7 +75,6 @@ class LoggerFactory
 				$logger->pushProcessor(new FriendicaIntrospectionProcessor($introspection, LogLevel::DEBUG));
 
 				$stream = $config->get('system', 'logfile');
-				$level = $config->get('system', 'loglevel');
 
 				$loglevel = self::mapLegacyConfigDebugLevel((string)$level);
 				static::addStreamHandler($logger, $stream, $loglevel);
@@ -93,7 +109,7 @@ class LoggerFactory
 			return null;
 		}
 
-		$introspection = new Introspection([Logger::class, SyslogLogger::class, Profiler::class]);
+		$introspection = new Introspection(self::$ignoreClassList);
 
 		$logger = new Monolog\Logger($channel);
 		$logger->pushProcessor(new Monolog\Processor\PsrLogMessageProcessor());
