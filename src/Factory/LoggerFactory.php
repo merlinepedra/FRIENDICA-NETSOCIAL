@@ -5,8 +5,9 @@ namespace Friendica\Factory;
 use Friendica\Core\Config\Configuration;
 use Friendica\Core\Logger;
 use Friendica\Network\HTTPException\InternalServerErrorException;
-use Friendica\Util\Logger\FriendicaDevelopHandler;
-use Friendica\Util\Logger\Introspection;
+use Friendica\Util\Introspection;
+use Friendica\Util\Logger\Monolog\FriendicaDevelopHandler;
+use Friendica\Util\Logger\Monolog\FriendicaIntrospectionProcessor;
 use Friendica\Util\Logger\SyslogLogger;
 use Friendica\Util\Logger\VoidLogger;
 use Friendica\Util\Profiler;
@@ -24,10 +25,12 @@ class LoggerFactory
 	/**
 	 * Creates a new PSR-3 compliant logger instances
 	 *
-	 * @param string        $channel The channel of the logger instance
-	 * @param Configuration $config  The config
+	 * @param string        $channel  The channel of the logger instance
+	 * @param Configuration $config   The config
 	 *
 	 * @return LoggerInterface The PSR-3 compliant logger instance
+	 *
+	 * @throws \Exception
 	 */
 	public static function create($channel, Configuration $config)
 	{
@@ -37,12 +40,13 @@ class LoggerFactory
 			return $logger;
 		}
 
+		$introspection = new Introspection([Logger::class, SyslogLogger::class, Profiler::class]);
+
 		switch ($config->get('system', 'logger_adapter', 'monolog')) {
 			case 'syslog':
-				$intorspector = new Introspection(LOG_DEBUG, [Logger::class, SyslogLogger::class, Profiler::class]);
 				$level = $config->get('system', 'loglevel');
 
-				$logger = new SyslogLogger($channel, $intorspector, $level);
+				$logger = new SyslogLogger($channel, $introspection, $level);
 				break;
 			case 'monolog':
 			default:
@@ -50,7 +54,7 @@ class LoggerFactory
 				$logger->pushProcessor(new Monolog\Processor\PsrLogMessageProcessor());
 				$logger->pushProcessor(new Monolog\Processor\ProcessIdProcessor());
 				$logger->pushProcessor(new Monolog\Processor\UidProcessor());
-				$logger->pushProcessor(new Introspection(LogLevel::DEBUG, [Logger::class, Profiler::class]));
+				$logger->pushProcessor(new FriendicaIntrospectionProcessor($introspection, LogLevel::DEBUG));
 
 				$stream = $config->get('system', 'logfile');
 				$level = $config->get('system', 'loglevel');
@@ -88,11 +92,13 @@ class LoggerFactory
 			return null;
 		}
 
+		$introspection = new Introspection([Logger::class, SyslogLogger::class, Profiler::class]);
+
 		$logger = new Monolog\Logger($channel);
 		$logger->pushProcessor(new Monolog\Processor\PsrLogMessageProcessor());
 		$logger->pushProcessor(new Monolog\Processor\ProcessIdProcessor());
 		$logger->pushProcessor(new Monolog\Processor\UidProcessor());
-		$logger->pushProcessor(new Introspection(LogLevel::DEBUG, ['Friendica\\Core\\Logger']));
+		$logger->pushProcessor(new FriendicaIntrospectionProcessor($introspection, LogLevel::DEBUG));
 
 		$logger->pushHandler(new FriendicaDevelopHandler($developerIp));
 
