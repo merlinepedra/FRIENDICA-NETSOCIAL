@@ -32,7 +32,9 @@ class LoggerFactory
 	public static function create($channel, Configuration $config)
 	{
 		if(empty($config->get('system', 'debugging', false))) {
-			return new VoidLogger();
+			$logger = new VoidLogger();
+			Logger::init($logger);
+			return $logger;
 		}
 
 		switch ($config->get('system', 'logger_adapter', 'monolog')) {
