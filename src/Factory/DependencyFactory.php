@@ -30,7 +30,7 @@ class DependencyFactory
 		$config = Factory\ConfigFactory::createConfig($configCache);
 		// needed to call PConfig::init()
 		Factory\ConfigFactory::createPConfig($configCache);
-		$logger = Factory\LoggerFactory::create($channel, $config);
+		$logger = Factory\LoggerFactory::create($channel, $config, $profiler);
 
 		return new App($config, $logger, $profiler, $isBackend);
 	}
