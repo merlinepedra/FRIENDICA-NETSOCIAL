@@ -4,7 +4,6 @@ namespace Friendica\Util\Logger;
 
 use Friendica\Network\HTTPException\InternalServerErrorException;
 use Friendica\Util\Introspection;
-use Psr\Log\InvalidArgumentException;
 use Psr\Log\LogLevel;
 
 /**
@@ -68,6 +67,12 @@ class SyslogLogger extends AbstractLogger
 	private $logLevel;
 
 	/**
+	 * A error message of the current operation
+	 * @var string
+	 */
+	private $errorMessage;
+
+	/**
 	 * {@inheritdoc}
 	 * @param string $level       The minimum loglevel at which this logger will be triggered
 	 * @param int    $logOpts     Indicates what logging options will be used when generating a log message
@@ -117,7 +122,7 @@ class SyslogLogger extends AbstractLogger
 	public function mapLevelToPriority($level)
 	{
 		if (!array_key_exists($level, $this->logLevels)) {
-			throw new InvalidArgumentException('LogLevel \'' . $level . '\' isn\'t valid.');
+			throw new \InvalidArgumentException(sprintf('The level "%s" is not valid.', $level));
 		}
 
 		return $this->logLevels[$level];
@@ -142,11 +147,15 @@ class SyslogLogger extends AbstractLogger
 	 */
 	private function write($priority, $message)
 	{
-		if (!openlog(self::IDENT, $this->logOpts, $this->logFacility)) {
-			throw new InternalServerErrorException('Can\'t open syslog for ident "' . $this->channel . '" and facility "' . $this->logFacility . '""');
+		set_error_handler([$this, 'customErrorHandler']);
+		$opened = openlog(self::IDENT, $this->logOpts, $this->logFacility);
+		restore_error_handler();
+
+		if (!$opened) {
+			throw new \UnexpectedValueException(sprintf('Can\'t open syslog for ident "%s" and facility "%s": ' . $this->errorMessage, $this->channel, $this->logFacility));
 		}
 
-		syslog($priority, $message);
+		$this->syslogWrapper($priority, $message);
 	}
 
 	/**
@@ -171,5 +180,27 @@ class SyslogLogger extends AbstractLogger
 		$logMessage .= @json_encode($record);
 
 		return $logMessage;
+	}
+
+	private function customErrorHandler($code, $msg)
+	{
+		$this->errorMessage = preg_replace('{^(fopen|mkdir)\(.*?\): }', '', $msg);
+	}
+
+	/**
+	 * A syslog wrapper to make syslog functionality testable
+	 *
+	 * @param int    $level The syslog priority
+	 * @param string $entry The message to send to the syslog function
+	 */
+	protected function syslogWrapper($level, $entry)
+	{
+		set_error_handler([$this, 'customErrorHandler']);
+		$written = syslog($level, $entry);
+		restore_error_handler();
+
+		if (!$written) {
+			throw new \UnexpectedValueException(sprintf('Can\'t write into syslog for ident "%s" and facility "%s": ' . $this->errorMessage, $this->channel, $this->logFacility));
+		}
 	}
 }
