@@ -128,7 +128,7 @@ class ConfigCacheLoader
 				unset($db_data);
 			}
 			if (isset($a->config['system']['db_charset'])) {
-				$a->config['database']['charset'] = $a->config['system']['charset'];
+				$a->config['database']['charset'] = $a->config['system']['db_charset'];
 			}
 			if (isset($pidfile)) {
 				$a->config['system']['pidfile'] = $pidfile;
