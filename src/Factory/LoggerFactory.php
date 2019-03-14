@@ -222,6 +222,7 @@ class LoggerFactory
 			if (!is_int($loglevel)) {
 				$loglevel = LogLevel::NOTICE;
 			}
+
 			$fileHandler = new Monolog\Handler\StreamHandler($stream, $loglevel);
 
 			$formatter = new Monolog\Formatter\LineFormatter("%datetime% %channel% [%level_name%]: %message% %context% %extra%\n");
