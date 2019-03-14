@@ -5,6 +5,7 @@
 
 namespace Friendica\Test;
 
+use Friendica\App;
 use Friendica\Core\Config\Cache;
 use Friendica\Database\DBA;
 use Friendica\Factory;
@@ -40,8 +41,9 @@ abstract class DatabaseTest extends MockedTest
 			$this->markTestSkipped('Please set the MYSQL_* environment variables to your test database credentials.');
 		}
 
-		$basedir = BasePath::create(dirname(__DIR__));
-		$configLoader = new Cache\ConfigCacheLoader($basedir);
+		$basepath = BasePath::create(dirname(__DIR__));
+		$mode = new App\Mode($basepath);
+		$configLoader = new Cache\ConfigCacheLoader($basepath, $mode);
 		$config = Factory\ConfigFactory::createCache($configLoader);
 
 		$profiler = \Mockery::mock(Profiler::class);

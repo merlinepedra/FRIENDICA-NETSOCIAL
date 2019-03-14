@@ -164,6 +164,16 @@ class App
 	}
 
 	/**
+	 * Returns the Mode of the Application
+	 *
+	 * @return App\Mode The Application Mode
+	 */
+	public function getMode()
+	{
+		return $this->mode;
+	}
+
+	/**
 	 * Register a stylesheet file path to be included in the <head> tag of every page.
 	 * Inclusion is done in App->initHead().
 	 * The path can be absolute or relative to the Friendica installation base folder.
@@ -206,19 +216,21 @@ class App
 	 * @brief App constructor.
 	 *
 	 * @param Configuration    $config    The Configuration
+	 * @param App\Mode         $mode      The mode of this Friendica app
 	 * @param LoggerInterface  $logger    The current app logger
 	 * @param Profiler         $profiler  The profiler of this application
 	 * @param bool             $isBackend Whether it is used for backend or frontend (Default true=backend)
 	 *
 	 * @throws Exception if the Basepath is not usable
 	 */
-	public function __construct(Configuration $config, LoggerInterface $logger, Profiler $profiler, $isBackend = true)
+	public function __construct(Configuration $config, App\Mode $mode, LoggerInterface $logger, Profiler $profiler, $isBackend = true)
 	{
 		BaseObject::setApp($this);
 
 		$this->logger   = $logger;
 		$this->config   = $config;
 		$this->profiler = $profiler;
+		$this->mode     = $mode;
 		$this->basePath = $this->config->get('system', 'basepath');
 
 		if (!Core\System::isDirectoryUsable($this->basePath, false)) {
@@ -230,8 +242,6 @@ class App
 		$this->checkFriendicaApp();
 
 		$this->profiler->reset();
-
-		$this->mode = new App\Mode($this->basePath);
 
 		$this->reload();
 
@@ -333,22 +343,6 @@ class App
 	}
 
 	/**
-	 * Returns the Mode of the Application
-	 *
-	 * @return App\Mode The Application Mode
-	 *
-	 * @throws InternalServerErrorException when the mode isn't created
-	 */
-	public function getMode()
-	{
-		if (empty($this->mode)) {
-			throw new InternalServerErrorException('Mode of the Application is not defined');
-		}
-
-		return $this->mode;
-	}
-
-	/**
 	 * Reloads the whole app instance
 	 */
 	public function reload()
@@ -359,7 +353,7 @@ class App
 
 		if ($this->getMode()->has(App\Mode::DBAVAILABLE)) {
 			Core\Hook::loadHooks();
-			$loader = new ConfigCacheLoader($this->basePath);
+			$loader = new ConfigCacheLoader($this->basePath, $this->mode);
 			Core\Hook::callAll('load_config', $loader);
 			$this->config->getCache()->load($loader->loadCoreConfig('addon'), true);
 		}
