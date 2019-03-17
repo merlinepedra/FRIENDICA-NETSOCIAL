@@ -55,6 +55,7 @@ class LoggerFactory
 
 		$introspection = new Introspection(self::$ignoreClassList);
 		$level = $config->get('system', 'loglevel');
+		$loglevel = self::mapLegacyConfigDebugLevel((string)$level);
 
 		switch ($config->get('system', 'logger_config', 'stream')) {
 
@@ -70,18 +71,17 @@ class LoggerFactory
 
 				$stream = $config->get('system', 'logfile');
 
-				$loglevel = self::mapLegacyConfigDebugLevel((string)$level);
 				static::addStreamHandler($logger, $stream, $loglevel);
 				break;
 
 			case 'syslog':
-				$logger = new SyslogLogger($channel, $introspection, $level);
+				$logger = new SyslogLogger($channel, $introspection, $loglevel);
 				break;
 
 			case 'stream':
 			default:
 				$stream = $config->get('system', 'logfile');
-				$logger = new StreamLogger($channel, $stream, $introspection, $level);
+				$logger = new StreamLogger($channel, $stream, $introspection, $loglevel);
 				break;
 		}
 
